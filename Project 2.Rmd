@@ -1,0 +1,226 @@
+---
+title: "STAT 3301"
+author: "A MINI - Project 2"
+date: "Yoojin Jeong (jeong.358)"
+output: html_document
+
+  
+---
+```{r message=FALSE,echo=FALSE}
+library(readr)
+library(tidyverse)
+library(alr4)
+library(broom)
+```
+\
+
+
+\large
+#### Instructions
+- Replace "FirstName LastName (name.n)" above with your information.
+- Provide your solutions carefully.
+- Include any R code that you use to answer the questions; if a numeric answer is required, show how you calculated it in R. 
+- Knit this document to HTML and upload both the HTML file and your completed Rmd file to Carmen
+- Make sure your solutions are clean and easy-to-read by
+    - formatting all plots to be appropriately sized, with appropriate axis labels.
+    - only including R code that is necessary to answer the questions below.
+    - only including R output that is necessary to answer the questions below (avoiding lengthy output).
+    - providing short written answers explaining your work, and writing in complete sentences.
+    
+**Introduction**
+
+This is regarding the question 1 from Midterm 1 with some modification. Do time young children remain at the lunch table and type of food they take help predict how much they eat in terms calories? **$n=126$** toddlers were observed over several months at a nursery school with a standard food type and two newly introduced food types in a school. The data set "CaloriesProject2" for this project is available on Carmen. 
+
+The variables are:
+
+| Variable Name | Description |
+| ------------- | --------------------------------------------------------------------- |
+| `time` | The number of **minutes** a child spent at the table when lunch was served. |
+| `type` | **What type of food** children eat at the lunch time. There are three different type of food: one is the standard food type, and other two are the newly introduced food types (`std`, `New1`, `New2`). |
+| `calories` | **number of calories** the child consumed during lunch, calculated from careful observation of what the child ate on a Friday |
+
+
+\vspace{1in}
+
+Our analysis earlier in the exam 1 investigates the relationship between time and calories and ignored the type of the food. We will now consider whether food `type` is a useful predictor in the model after adjusting for the effect of `time`. Another way to think about this is whether the relationship between `calories` and `time` is different for children with the different type of food(and if so, how is that relationship different).
+
+A plot of the data and fitted line for a relationship between time and calories for all types of the food shown by colors given below:
+
+
+```{r fig.height=5,message=FALSE,warning=FALSE,echo = FALSE}
+cal2 = read_csv("CaloriesProject2.csv")
+cal2 %>% ggplot(aes(x = time, y = calories, color = type)) + geom_point() + 
+  theme_bw(20) + xlab("Time") + ylab("Colories") + scale_color_hue("Food Type")
+```
+
+```{r echo = FALSE, message = FALSE, fig.height = 5}
+(p = cal2 %>% ggplot(aes(x = time, y = calories)) + 
+  geom_point(aes(color = type)) + 
+  geom_smooth(method="lm", se=FALSE,  size=0.75)+theme_bw(20) + xlab("Time") + ylab("Colories") + scale_color_hue("Food Type")) 
+
+```
+
+(a) Based on the above plots, a researcher beliefs that a different model that consider `type` of the food will be a useful predictor for `calories`. Fit a model that includes main effects for `calories` and `type` (i.e., a model that allows for different intercepts but same slopes for `time` across different levels of food `type`).
+
+    Write down the estimated mean function for calories given each food types.
+
+$$
+\hat{E}(calories | time, type = New1) = \hat{\beta_0} + \hat{\beta_3}time
+$$
+
+$$
+\hat{E}(calories | time, type = New2) = \hat{\beta_0} + \hat{\beta_1} + \hat{\beta_3}time
+$$
+
+$$
+\hat{E}(calories | time, type = std) = \hat{\beta_0} + \hat{\beta_2} + \hat{\beta_3}time
+$$
+
+(b) Use `R` to fit the multiple linear regression model in part (a). Use the `summary()` function to display the standard summary of the fitted model.
+
+```{r}
+summary(lm(calories ~ type + time, data = cal2))
+```
+
+(c) What does the estimated coefficient of time in the output says about calories consumed by children across food types.
+
+$\hat{\beta_3} = -7.3331$ is the estimated slope of the regression of calories on time for all food types. For children consuming the same food type, additional minute a child spent at the table when lunch was served is associated with an estimated -7.3331 in average number of calories the child consumed during lunch.
+
+(d) Make a plot of the data (color coded by type of the food) that includes the two estimated regression lines (color coded by type of the food).
+
+Plotting the fitted regression lines is a little trickier. You may use the following sample r code to produce this plot.
+
+`**augment(lllmmm) %>% ggplot(aes(x = `xxx`, y = `yyy`, color = ttt)) + geom_point() + geom_line(aes(y = .fitted))**`
+
+To get the plot, replace `lllmmm`,`xxx`,`yyy` and `ttt` as follows:
+
+`lllmmm` - be the name of lm object of the model fitted in part (b)
+
+`xxx` - be the name of time variable used for `lllmmm`.
+
+`yyy` - be the name of calories variable used for `lllmmm`.
+
+`ttt` - be the name of type variable used for `lllmmm`.
+
+```{r}
+augment(lm(calories ~ type + time, data = cal2), se_fit = TRUE) %>% ggplot(aes(x = time, y = calories, color = type)) + geom_point() + geom_line(aes(y = .fitted)) + theme_bw(10)
+```
+
+(e) Based on the above results in parts (b), (c) and plot in part (d) , this time the researcher beliefs that the relationship between `calories` and `time` is different for food types that children eat at lunch time. 
+
+    Fit a model that includes both main and interaction effects for `type` and `time` (i.e., a model that allows for different intercepts and slopes for `calories` across different levels food `type`). 
+
+    Write down the estimated regression equations separately for food types. 
+    
+```{r}
+lm(calories ~ type*time, data = cal2)
+```    
+    
+$$
+\hat{E}(calories | time, type=New1) = \hat{\beta_0} + \hat{\beta_3}time
+$$
+
+$$
+\hat{E}(calories | time, type=New2) = \hat{\beta_0} + \hat{\beta_1} + (\hat{\beta_3} + \hat{\beta_4})time
+$$
+
+$$
+\hat{E}(calories | time, type=std) = \hat{\beta_0} + \hat{\beta_2} + (\hat{\beta_3} + \hat{\beta_5})time
+$$
+
+(f) Use `R` to fit the multiple linear regression model for part (e). Use the `summary()` function to display the standard summary of the fitted model.
+
+```{r}
+summary(lm(calories ~ type*time, data = cal2))
+```
+
+(g) Make a plot of the data (color coded by `type`) that includes the two estimated regression lines (color coded by `type`) from part (f).
+
+    *Hint*: This plot can be produced by adding the layer `geom_smooth(method = "lm", se = FALSE)` to the followin code:
+
+ggplot(aes(x = xxx, y = yyy, color = ttt)) + geom_point() 
+
+```{r}
+augment(lm(calories ~ type * time, data = cal2), se_fit = TRUE) %>% ggplot(aes(x = time, y = calories, color = type)) + geom_point() + geom_smooth(method = "lm", se = FALSE) + theme_bw(10)
+```
+
+(h) The researcher has now three potential models:
+
+    M1. Assumes the relationship between `coloreis` and `time` is 
+    exactly the same no matter the types of food (`calories ~ time`).
+    This is the one we considered in our mid exam 1 with some modification 
+    
+    M2. Assumes parallel regression lines (`calories~time+type`). 
+    The effect of time on calories is the same for all food types and vice versa. 
+    
+    M3: Assumes different regression relationships (`calories~time*type`). 
+    The effect of time on calories is not the same for all food types and vice versa.
+
+    Please calculate AIC and BIC for each models M1, M2, and M3. 
+    Based on the AIC, please select a best model out of the three considered models.
+    
+## M1
+```{r}
+m1 = lm(calories ~ time, data = cal2)
+n = dim(cal2)
+p = length(coef(m1))
+
+extractAIC(m1)
+extractAIC(m1, k = log(143))
+```
+
+## M2
+```{r}
+m2 = lm(calories ~ time + type, data = cal2)
+n = dim(cal2)
+p = length(coef(m2))
+
+extractAIC(m2)
+extractAIC(m2, k = log(143))
+```
+
+## M3
+```{r}
+m3 = lm(calories ~ time * type, data = cal2)
+n = dim(cal2)
+p = length(coef(m3))
+
+extractAIC(m3)
+extractAIC(m3, k = log(143))
+```
+Since M3's AIC is the lowest, M3 is a best model out of the three considered models.
+
+(i) Suppose the researcher select the model M3 based AIC for his future use to predict calories give time and type, but after looking the plots used in this analysis, he had a concern about variance of calories across the food types.
+
+    He did the following two residual plots:
+
+    Residual plot1: make separate residual plots at each level of the categorical predictor.
+    Residual plot2: color code residual plots by levels of the categorical predictor.
+    
+    The Residual plot1 and Residual plot2 are shown below.
+
+## Residual plot1
+```{r echo = FALSE, fig.height = 6,fig.align='center'}
+base = augment(lm(calories ~ time *type, data = cal2)) %>%
+  ggplot(aes(y = .std.resid)) + ylab("standarized residuals") + 
+  geom_hline(yintercept = 0) +
+  geom_point(aes(x = .fitted)) + xlab("fitted values")
+
+base + facet_wrap(~type, ncol = 2) + theme_bw(20)
+
+```
+
+## Residual plot2
+```{r echo = FALSE}
+base + aes(color = type) + theme_bw(22)
+```
+
+
+Discuss in detail whether the researcher can still use the following variance function for the model fit.
+
+\[
+  \mbox{Var}(calories) \mid time,type) = \sigma^2.
+\]
+
+### ANSWER for (i)
+When we see the separate residual plots at each level of the categorical predictor, each graph shows constant variance. However, when we look at the color code residual plots by levels of the categorical predictor, the plots don't show constant variance. Thus, the researcher can not use the variance function for the model fit written above.
