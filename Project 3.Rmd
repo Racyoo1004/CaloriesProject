@@ -1,0 +1,125 @@
+---
+title: "STAT 3301"
+author: "A MINI - Project 3"
+date: "Yoojin Jeong (jeong.358)"
+output: html_document
+
+  
+---
+
+<!-- These are some LaTeX macros for certain symbols -->
+\newcommand{\bx}{\mathbf{x}}
+\newcommand{\bfb}{\mbox{\boldmath $\beta$}}
+\newcommand{\bX}{\mathbf{X}}
+\newcommand{\bY}{\mathbf{Y}}
+
+```{r message=FALSE,echo=FALSE}
+library(readr)
+library(tidyverse)
+library(alr4)
+library(broom)
+```
+\
+
+
+\large
+#### Instructions
+- Replace "FirstName LastName (name.n)" above with your information.
+- Provide your solutions carefully.
+- Include any R code that you use to answer the questions; if a numeric answer is required, show how you calculated it in R. 
+- Knit this document to HTML and upload both the HTML file and your completed Rmd file to Carmen
+- Make sure your solutions are clean and easy-to-read by
+- formatting all plots to be appropriately sized, with appropriate axis labels.
+- only including R code that is necessary to answer the questions below.
+- only including R output that is necessary to answer the questions below (avoiding lengthy output).
+- providing short written answers explaining your work, and writing in complete sentences.
+
+**Introduction**
+
+This is a continuation of the project 2.
+
+Do time young children remain at the lunch table and type of food they take help predict how much they eat in terms calories? **$n=126$** toddlers were observed over several months at a nursery school with a standard food type and two newly introduced food types in a school. The data set "CaloriesProject2" for this project is available on Carmen. 
+
+The variables are:
+
+| Variable Name | Description |
+| ------------- | --------------------------------------------------------------------- |
+| `time` | The number of **minutes** a child spent at the table when lunch was served. |
+| `type` | **What type of food** children eat at the lunch time. There are three different type of food: one is the standard food type, and other two are the newly introduced food types (`std`, `New1`, `New2`). |
+| `calories` | **number of calories** the child consumed during lunch, calculated from careful observation of what the child ate on a Friday |
+
+
+In our project 2, we have considered the three different models to predict calories with different predictors and different combinations. The three potential models:
+
+M1. Assumes the relationship between `coloreis` and `time` is 
+exactly the same no matter the types of food (`calories ~ time`).
+This is the one we considered in our mid exam 1 with some modification 
+
+M2. Assumes parallel regression lines (`calories~time+type`). 
+The effect of time on calories is the same for all food types and vice versa. 
+
+M3: Assumes different regression relationships (`calories~time*type`). 
+The effect of time on calories is not the same for all food types and vice versa.
+
+We are interested in applying the k-fold cross-validation to select a best models out the three above considered models.
+
+\vspace{1cm}
+**Part (i)**
+\vspace{1cm}
+
+Consider $k=5$ with the following data splitting:
+split the data into five roughly equal groups. There are $n = 126$ samples in the data set, and so we can split the data into first four groups of 25 data points each and the last group of 26 data points. 
+
+**Please use the seed number `33013301` for you sampling**
+
+(1) Compute cross validated average of the prediction errors for each model:
+\[
+CV(M_j) = \frac{1}{126}\sum_{i=1}^{126} (y_i - \bx_{i, M_j}^T \hat{\bfb}_{M_j}^{-O(i)})^2
+\]
+for $j=1,2,3$ and with 
+
+$y_i$= i^th^ response value of the original data.
+
+$x_i^T$= is the predictor values of the i^th^ observation of the original data.
+
+$\hat{\bfb}_{M_j}^{-k} = ({\bX_{M_j}^{-k}}^T \bX_{M_j}^{-k})^{-1} {\bX_{M_j}^{-k}}^T \bY^{-k}$
+be the estimated regression coefficients for model $M_j$ based on the training data (i.e., the data
+without set $k$).
+
+where an individual case $i$, $O(i)$, let $O(i) \in \{1, 2, \ldots, 5\}$ specify to which set the case
+belongs.
+
+```{r}
+cal2 = read_csv("CaloriesProject2.csv")
+set.seed(33013301)
+calories = cal2 %>% mutate(fold = sample(head(rep(1:5, 26), 126)))
+
+M1 = M2 = M3 = vector("list", 5)
+for(k in 1:5) {
+  M1[[k]] = lm(calories~time, data = calories %>% filter(fold != k))
+  M2[[k]] = lm(calories~time+type, data = calories %>% filter(fold != k))
+  M3[[k]] = lm(calories~time*type, data = calories %>% filter(fold != k))
+}
+
+preds.M1 = preds.M2 = preds.M3 = rep(NA, 126)
+
+for(i in 1:126) {
+  foldi = calories$fold[i]
+  preds.M1[i] = predict(M1[[foldi]], newdata = calories[i,])
+  preds.M2[i] = predict(M2[[foldi]], newdata = calories[i,])
+  preds.M3[i] = predict(M3[[foldi]], newdata = calories[i,])
+}
+
+mean((calories$calories - preds.M1)^2)
+mean((calories$calories - preds.M2)^2)
+mean((calories$calories - preds.M3)^2)
+```
+
+
+(2) Select the best model based on the cross validated average of the 
+prediction errors computed in question (1).
+\vspace{1cm}
+
+Among these three models, M3 seems to be the best model because the cross validated average of the
+prediction error is the smallest.
+
